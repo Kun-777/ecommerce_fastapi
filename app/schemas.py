@@ -23,6 +23,7 @@ class CategoryResponse(BaseModel):
 class UserCreate(BaseModel):
     username: str
     email: EmailStr
+    phone: str
     password: str
 
 class UserLogin(BaseModel):
