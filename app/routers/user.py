@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
 from fastapi_jwt_auth import AuthJWT
+import datetime
 from ..database import get_db
 from .. import models, schemas
 from ..utils import get_password_hash, verify_password, send_verification_email
@@ -53,8 +54,10 @@ def login(user_credentials: schemas.UserLogin, Authorize: AuthJWT = Depends(), d
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials"
         )
-    access_token = Authorize.create_access_token(subject=user.email)
-    refresh_token = Authorize.create_refresh_token(subject=user.email)
+    at_expires = datetime.timedelta(seconds=5)
+    rt_expires = datetime.timedelta(hours=10)
+    access_token = Authorize.create_access_token(subject=user.email, expires_time=at_expires)
+    refresh_token = Authorize.create_refresh_token(subject=user.email, expires_time=rt_expires)
 
     # Set the JWT cookies in the response
     Authorize.set_access_cookies(access_token)
@@ -72,7 +75,8 @@ def refresh(Authorize: AuthJWT = Depends()):
     Authorize.jwt_refresh_token_required()
 
     current_user = Authorize.get_jwt_subject()
-    new_access_token = Authorize.create_access_token(subject=current_user)
+    at_expires = datetime.timedelta(seconds=5)
+    new_access_token = Authorize.create_access_token(subject=current_user, expires_time=at_expires)
     Authorize.set_access_cookies(new_access_token)
     return {"access_token": new_access_token, "token_type": "bearer"}
 
