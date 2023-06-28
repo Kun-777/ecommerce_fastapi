@@ -12,7 +12,7 @@ def get_password_hash(password):
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
-async def send_verification_email(email: List[EmailStr], token: str):
+async def send_verification_email(email: EmailStr):
     conf = ConnectionConfig(
         MAIL_USERNAME ="alex.fulin.jiang@gmail.com",
         MAIL_PASSWORD = "twpmocqvjpmququg",
@@ -42,7 +42,7 @@ async def send_verification_email(email: List[EmailStr], token: str):
                         <table border="0" cellpadding="0" cellspacing="0" style="margin-top: 30px;">
                         <tr>
                             <td align="center" bgcolor="#3498db" style="border-radius: 5px;">
-                            <a href="http://localhost:8000/verify_email?token={token}" target="_blank" style="font-size: 16px; font-weight: bold; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 5px; display: inline-block;">Verify Email</a>
+                            <a href="http://localhost:3000/verify_email" target="_blank" style="font-size: 16px; font-weight: bold; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 5px; display: inline-block;">Verify Email</a>
                             </td>
                         </tr>
                         </table>
@@ -57,7 +57,7 @@ async def send_verification_email(email: List[EmailStr], token: str):
 
     message = MessageSchema(
         subject="Fastapi-Mail module",
-        recipients=email,
+        recipients=[email],
         body=html,
         subtype=MessageType.html)
 

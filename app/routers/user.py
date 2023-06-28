@@ -8,7 +8,6 @@ import datetime
 from ..database import get_db
 from .. import models, schemas
 from ..utils import get_password_hash, verify_password, send_verification_email
-from ..oauth2 import create_access_token, get_current_user
 
 router = APIRouter()
 
@@ -24,27 +23,11 @@ async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    # automatically log the user in
-    access_token = create_access_token(data = {"user_email": user.email})
     # email verification
-    await send_verification_email([user.email], access_token)
-    return {"access_token": access_token, "token_type": "bearer"}
+    await send_verification_email(user.email)
+    return {"msg":"Successfully registered"}
 
-# @router.post('/login', response_model=schemas.Token)
-# def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-#     user = db.query(models.User).filter(models.User.email == user_credentials.username).first()
-#     if not user:
-#         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials")
-    
-#     if not verify_password(user_credentials.password, user.password):
-#         raise HTTPException(
-#             status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials"
-#         )
-#     # create a JWT token
-#     access_token = create_access_token(data = {"user_email": user.email})
-#     return {"access_token": access_token, "token_type": "bearer"}
-
-@router.post('/login', response_model=schemas.Token)
+@router.post('/login', response_model=schemas.UserLoginResponse)
 def login(user_credentials: schemas.UserLogin, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
     if not user:
@@ -54,18 +37,35 @@ def login(user_credentials: schemas.UserLogin, Authorize: AuthJWT = Depends(), d
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials"
         )
-    at_expires = datetime.timedelta(seconds=5)
-    rt_expires = datetime.timedelta(hours=10)
-    access_token = Authorize.create_access_token(subject=user.email, expires_time=at_expires)
-    refresh_token = Authorize.create_refresh_token(subject=user.email, expires_time=rt_expires)
+    at_expires = datetime.timedelta(minutes=15)
+    rt_expires = datetime.timedelta(days=7)
+    access_token = Authorize.create_access_token(subject=user.id, expires_time=at_expires)
+    refresh_token = Authorize.create_refresh_token(subject=user.id, expires_time=rt_expires)
 
     # Set the JWT cookies in the response
     Authorize.set_access_cookies(access_token)
     Authorize.set_refresh_cookies(refresh_token)
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "first_name": user.first_name}
 
-@router.post('/refresh')
-def refresh(Authorize: AuthJWT = Depends()):
+@router.post('/login_no_refresh', response_model=schemas.UserLoginResponse)
+def login(user_credentials: schemas.UserLogin, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials")
+    
+    if not verify_password(user_credentials.password, user.password):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials"
+        )
+    at_expires = datetime.timedelta(hours=2)
+    access_token = Authorize.create_access_token(subject=user.id, expires_time=at_expires)
+
+    # Set the JWT cookies in the response
+    Authorize.set_access_cookies(access_token)
+    return {"access_token": access_token, "first_name": user.first_name}
+
+@router.post('/refresh', response_model=schemas.UserLoginResponse)
+def refresh(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     """
     The jwt_refresh_token_required() function insures a valid refresh
     token is present in the request before running any code below that function.
@@ -74,11 +74,16 @@ def refresh(Authorize: AuthJWT = Depends()):
     """
     Authorize.jwt_refresh_token_required()
 
-    current_user = Authorize.get_jwt_subject()
-    at_expires = datetime.timedelta(seconds=5)
-    new_access_token = Authorize.create_access_token(subject=current_user, expires_time=at_expires)
-    Authorize.set_access_cookies(new_access_token)
-    return {"access_token": new_access_token, "token_type": "bearer"}
+    user_id = Authorize.get_jwt_subject()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user:
+        at_expires = datetime.timedelta(minutes=15)
+        new_access_token = Authorize.create_access_token(subject=user_id, expires_time=at_expires)
+        Authorize.set_access_cookies(new_access_token)
+        return {"access_token": new_access_token, "first_name": user.first_name}
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Invalid token or expired token")
 
 @router.delete('/logout')
 def logout(Authorize: AuthJWT = Depends()):
@@ -87,14 +92,16 @@ def logout(Authorize: AuthJWT = Depends()):
     Authorize.unset_jwt_cookies()
     return {"msg":"Successfully logout"}
 
-@router.get('/verify_email', response_class=HTMLResponse)
-def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
-    user = get_current_user(token=token, db=db)
+@router.post('/verify_email', response_class=HTMLResponse)
+def verify_email(request: Request, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
+    Authorize.jwt_required()
+    user_id = Authorize.get_jwt_subject()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
     if user:
-        update_query = db.query(models.User).filter(models.User.email == user.email)
+        update_query = db.query(models.User).filter(models.User.id == user.id)
         update_query.update({"is_verified": True}, synchronize_session=False)
         db.commit()
-        return templates.TemplateResponse("email_verification.html", {"request": request, "username": user.email})
+        return templates.TemplateResponse("email_verification.html", {"request": request, "username": user.first_name})
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Invalid token or expired token")

@@ -21,7 +21,8 @@ class CategoryResponse(BaseModel):
         orm_mode = True
 
 class UserCreate(BaseModel):
-    username: str
+    first_name: str
+    last_name: str
     email: EmailStr
     phone: str
     password: str
@@ -30,6 +31,6 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-class Token(BaseModel):
+class UserLoginResponse(BaseModel):
     access_token: str
-    token_type: str
+    first_name: str
