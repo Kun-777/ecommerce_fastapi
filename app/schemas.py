@@ -27,6 +27,12 @@ class UserCreate(BaseModel):
     phone: str
     password: str
 
+class UserProfile(BaseModel):
+    first_name: str
+    last_name: str
+    email: EmailStr
+    phone: str
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
@@ -34,3 +40,7 @@ class UserLogin(BaseModel):
 class UserLoginResponse(BaseModel):
     access_token: str
     first_name: str
+
+class UserChangePassword(BaseModel):
+    old_password: str
+    new_password: str

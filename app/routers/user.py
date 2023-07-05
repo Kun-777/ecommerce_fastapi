@@ -9,7 +9,7 @@ from ..database import get_db
 from .. import models, schemas
 from ..utils import get_password_hash, verify_password, send_verification_email
 
-router = APIRouter()
+router = APIRouter(prefix='/user')
 
 templates = Jinja2Templates(directory='templates')
 
@@ -26,6 +26,35 @@ async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     # email verification
     await send_verification_email(user.email)
     return {"msg":"Successfully registered"}
+
+@router.post('/edit_profile')
+def edit_profile(user_edit: schemas.UserProfile, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
+    Authorize.jwt_required()
+    user_id = Authorize.get_jwt_subject()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user:
+        update_query = db.query(models.User).filter(models.User.id == user.id)
+        update_query.update(user_edit.dict(), synchronize_session=False)
+        db.commit()
+        return {"first_name": user_edit.first_name}
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="User not found")
+
+@router.post('/change_password')
+def edit_profile(passwords: schemas.UserChangePassword, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
+    Authorize.jwt_required()
+    user_id = Authorize.get_jwt_subject()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user and verify_password(passwords.old_password, user.password):
+        hashed_password = get_password_hash(passwords.new_password)
+        update_query = db.query(models.User).filter(models.User.id == user.id)
+        update_query.update({"password": hashed_password}, synchronize_session=False)
+        db.commit()
+        return {"msg": "Success"}
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="User not found / Old password you entered does not match the information we have on file")
 
 @router.post('/login', response_model=schemas.UserLoginResponse)
 def login(user_credentials: schemas.UserLogin, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
@@ -91,6 +120,17 @@ def logout(Authorize: AuthJWT = Depends()):
 
     Authorize.unset_jwt_cookies()
     return {"msg":"Successfully logout"}
+
+@router.get('/profile', response_model=schemas.UserProfile)
+def profile(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
+    Authorize.jwt_required()
+    user_id = Authorize.get_jwt_subject()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user:
+        return {'first_name': user.first_name, 'last_name': user.last_name, 'email': user.email, 'phone': user.phone}
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Invalid token or expired token")
 
 @router.post('/verify_email', response_class=HTMLResponse)
 def verify_email(request: Request, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
