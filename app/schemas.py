@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 
 class Product(BaseModel):
     name: str
@@ -8,7 +8,6 @@ class Product(BaseModel):
     size: str
     category: str
     image: Optional[str]
-    cost: float
 
 class ProductResponse(Product):
     id: int
@@ -44,3 +43,11 @@ class UserLoginResponse(BaseModel):
 class UserChangePassword(BaseModel):
     old_password: str
     new_password: str
+
+class CartItem(Product):
+    id: int
+    quantity: int
+    synced: bool
+
+class UserCart(BaseModel):
+    cart: List[CartItem]

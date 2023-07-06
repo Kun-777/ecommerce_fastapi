@@ -27,7 +27,7 @@ async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     await send_verification_email(user.email)
     return {"msg":"Successfully registered"}
 
-@router.post('/edit_profile')
+@router.put('/edit_profile')
 def edit_profile(user_edit: schemas.UserProfile, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     Authorize.jwt_required()
     user_id = Authorize.get_jwt_subject()
@@ -41,7 +41,7 @@ def edit_profile(user_edit: schemas.UserProfile, Authorize: AuthJWT = Depends(),
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="User not found")
 
-@router.post('/change_password')
+@router.put('/change_password')
 def edit_profile(passwords: schemas.UserChangePassword, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     Authorize.jwt_required()
     user_id = Authorize.get_jwt_subject()

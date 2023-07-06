@@ -6,7 +6,7 @@ from fastapi_jwt_auth.exceptions import AuthJWTException
 from pydantic import BaseModel
 from . import models
 from .database import engine
-from .routers import product, user
+from .routers import product, user, cart
 from .config import settings
 
 models.Base.metadata.create_all(bind=engine)
@@ -14,6 +14,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 app.include_router(product.router)
 app.include_router(user.router)
+app.include_router(cart.router)
 
 app.add_middleware(
     CORSMiddleware,

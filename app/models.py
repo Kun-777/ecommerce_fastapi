@@ -37,3 +37,4 @@ class CartItem(Base):
     product = relationship("Product")
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     quantity = Column(Integer, nullable=False)
+    synced = Column(Boolean, nullable=False, server_default='True')
