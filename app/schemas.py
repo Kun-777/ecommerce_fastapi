@@ -45,7 +45,7 @@ class UserChangePassword(BaseModel):
     new_password: str
 
 class CartItem(Product):
-    id: int
+    id: int # product id
     quantity: int
     synced: bool
 

@@ -8,6 +8,9 @@ from . import models
 from .database import engine
 from .routers import product, user, cart
 from .config import settings
+import logging
+from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -45,6 +48,13 @@ def authjwt_exception_handler(request: Request, exc: AuthJWTException):
 @app.get("/")
 def root():
     return {"message": "Hello World"}
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+	exc_str = f'{exc}'.replace('\n', ' ').replace('   ', ' ')
+	logging.error(f"{request}: {exc_str}")
+	content = {'status_code': 10422, 'message': exc_str, 'data': None}
+	return JSONResponse(content=content, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
 
 
