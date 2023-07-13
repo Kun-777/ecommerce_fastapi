@@ -7,7 +7,7 @@ from ..oauth2 import get_current_user
 
 router = APIRouter(prefix='/products')
 
-@router.get("/", response_model=List[schemas.ProductResponse])
+@router.get("", response_model=List[schemas.ProductResponse])
 def get_products(db: Session = Depends(get_db), search: Optional[str] = ''):
     all_products = db.query(models.Product).filter(models.Product.name.contains(search)).all()
     return all_products

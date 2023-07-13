@@ -29,7 +29,11 @@ def get_cart(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
 def update_cart(cart: schemas.UserCart, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     Authorize.jwt_required()
     user_id = Authorize.get_jwt_subject()
-    for item in cart.cart:
+    if not cart.items:
+        # empty cart
+        update_query = db.query(models.CartItem).filter(models.CartItem.user_id == user_id)
+        update_query.delete(synchronize_session=False)
+    for item in cart.items:
         if not item.synced:
             # user modified cart item in front end, update in db
             update_query = db.query(models.CartItem).filter(models.CartItem.user_id == user_id, models.CartItem.product_id == item.id)
@@ -44,7 +48,15 @@ def update_cart(cart: schemas.UserCart, Authorize: AuthJWT = Depends(), db: Sess
             else:
                 if item.quantity == 0:
                     update_query.delete(synchronize_session=False)
+                    cart.items.remove(item)
                 else:
                     update_query.update({'quantity': item.quantity}, synchronize_session=False)
     db.commit()
-    return cart.cart
+    return cart.items
+
+def calculate_cart_subtotal(cart_items:List[schemas.CartItem], db: Session = Depends(get_db)):
+    subtotal = 0
+    for item in cart_items:
+        item_price = db.query(models.Product).filter(models.Product.id == item.id).first().price
+        subtotal += item_price * item.quantity
+    return subtotal

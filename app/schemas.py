@@ -50,4 +50,17 @@ class CartItem(Product):
     synced: bool
 
 class UserCart(BaseModel):
-    cart: List[CartItem]
+    items: List[CartItem]
+
+class OrderCreate(BaseModel):
+    items: List[CartItem]
+    order_type: str
+    first_name: str
+    last_name: str
+    email: str
+    phone: str
+    address_line_1: Optional[str]
+    address_line_2: Optional[str]
+    city: Optional[str]
+    state: Optional[str]
+    zip_code: Optional[str]

@@ -8,7 +8,10 @@ class Settings(BaseSettings):
     database_password: str
     secret_key: str
     algorithm: str
-    access_token_expire_hours: int
+    access_token_expire_minutes: int
+    refresh_token_expire_days: int
+    tax_rate: float
+    delivery_fee: float
 
     class Config:
         env_file = ".env"

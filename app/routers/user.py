@@ -8,6 +8,7 @@ import datetime
 from ..database import get_db
 from .. import models, schemas
 from ..utils import get_password_hash, verify_password, send_verification_email
+from ..config import settings
 
 router = APIRouter(prefix='/user')
 
@@ -66,8 +67,8 @@ def login(user_credentials: schemas.UserLogin, Authorize: AuthJWT = Depends(), d
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials"
         )
-    at_expires = datetime.timedelta(minutes=15)
-    rt_expires = datetime.timedelta(days=7)
+    at_expires = datetime.timedelta(minutes=settings.access_token_expire_minutes)
+    rt_expires = datetime.timedelta(days=settings.refresh_token_expire_days)
     access_token = Authorize.create_access_token(subject=user.id, expires_time=at_expires)
     refresh_token = Authorize.create_refresh_token(subject=user.id, expires_time=rt_expires)
 
@@ -106,7 +107,7 @@ def refresh(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     user_id = Authorize.get_jwt_subject()
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if user:
-        at_expires = datetime.timedelta(minutes=15)
+        at_expires = datetime.timedelta(minutes=settings.access_token_expire_minutes)
         new_access_token = Authorize.create_access_token(subject=user_id, expires_time=at_expires)
         Authorize.set_access_cookies(new_access_token)
         return {"access_token": new_access_token, "first_name": user.first_name}
