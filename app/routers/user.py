@@ -1,7 +1,6 @@
 from fastapi import status, HTTPException, Depends, APIRouter, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
-from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
 from fastapi_jwt_auth import AuthJWT
 import datetime
@@ -29,7 +28,7 @@ async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return {"msg":"Successfully registered"}
 
 @router.put('/edit_profile')
-def edit_profile(user_edit: schemas.UserProfile, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
+def edit_profile(user_edit: schemas.UserProfileChange, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     Authorize.jwt_required()
     user_id = Authorize.get_jwt_subject()
     user = db.query(models.User).filter(models.User.id == user_id).first()
@@ -37,13 +36,27 @@ def edit_profile(user_edit: schemas.UserProfile, Authorize: AuthJWT = Depends(),
         update_query = db.query(models.User).filter(models.User.id == user.id)
         update_query.update(user_edit.dict(), synchronize_session=False)
         db.commit()
-        return {"first_name": user_edit.first_name}
+        return {"first_name": user_edit.first_name, "msg": "Profile has been successfully updated."}
     else:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="User not found")
+
+@router.put('/change_address')
+def change_address(addr: schemas.Address, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
+    Authorize.jwt_required()
+    user_id = Authorize.get_jwt_subject()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user:
+        update_query = db.query(models.User).filter(models.User.id == user.id)
+        update_query.update(addr.dict(), synchronize_session=False)
+        db.commit()
+        return {"msg": "Address has been successfully updated."}
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="User not found")
 
 @router.put('/change_password')
-def edit_profile(passwords: schemas.UserChangePassword, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
+def change_password(passwords: schemas.UserChangePassword, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     Authorize.jwt_required()
     user_id = Authorize.get_jwt_subject()
     user = db.query(models.User).filter(models.User.id == user_id).first()
@@ -52,20 +65,23 @@ def edit_profile(passwords: schemas.UserChangePassword, Authorize: AuthJWT = Dep
         update_query = db.query(models.User).filter(models.User.id == user.id)
         update_query.update({"password": hashed_password}, synchronize_session=False)
         db.commit()
-        return {"msg": "Success"}
+        return {"msg": "Your password has been successfully updated."}
+    elif user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="User not found")
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail="User not found / Old password you entered does not match the information we have on file")
+                            detail="Old password you entered does not match the information we have on file")
 
 @router.post('/login', response_model=schemas.UserLoginResponse)
 def login(user_credentials: schemas.UserLogin, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Credentials")
     
     if not verify_password(user_credentials.password, user.password):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Credentials"
         )
     at_expires = datetime.timedelta(minutes=settings.access_token_expire_minutes)
     rt_expires = datetime.timedelta(days=settings.refresh_token_expire_days)
@@ -75,24 +91,24 @@ def login(user_credentials: schemas.UserLogin, Authorize: AuthJWT = Depends(), d
     # Set the JWT cookies in the response
     Authorize.set_access_cookies(access_token)
     Authorize.set_refresh_cookies(refresh_token)
-    return {"access_token": access_token, "first_name": user.first_name}
+    return {"access_token": access_token, "first_name": user.first_name, "is_admin": user.is_admin}
 
 @router.post('/login_no_refresh', response_model=schemas.UserLoginResponse)
-def login(user_credentials: schemas.UserLogin, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
+def login_no_refresh(user_credentials: schemas.UserLogin, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Credentials")
     
     if not verify_password(user_credentials.password, user.password):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Credentials"
         )
     at_expires = datetime.timedelta(hours=2)
     access_token = Authorize.create_access_token(subject=user.id, expires_time=at_expires)
 
     # Set the JWT cookies in the response
     Authorize.set_access_cookies(access_token)
-    return {"access_token": access_token, "first_name": user.first_name}
+    return {"access_token": access_token, "first_name": user.first_name, "is_admin": user.is_admin}
 
 @router.post('/refresh', response_model=schemas.UserLoginResponse)
 def refresh(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
@@ -110,7 +126,7 @@ def refresh(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
         at_expires = datetime.timedelta(minutes=settings.access_token_expire_minutes)
         new_access_token = Authorize.create_access_token(subject=user_id, expires_time=at_expires)
         Authorize.set_access_cookies(new_access_token)
-        return {"access_token": new_access_token, "first_name": user.first_name}
+        return {"access_token": new_access_token, "first_name": user.first_name, "is_admin": user.is_admin}
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Invalid token or expired token")
@@ -122,13 +138,13 @@ def logout(Authorize: AuthJWT = Depends()):
     Authorize.unset_jwt_cookies()
     return {"msg":"Successfully logout"}
 
-@router.get('/profile', response_model=schemas.UserProfile)
+@router.get('/profile', response_model=schemas.UserProfileResponse)
 def profile(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     Authorize.jwt_required()
     user_id = Authorize.get_jwt_subject()
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if user:
-        return {'first_name': user.first_name, 'last_name': user.last_name, 'email': user.email, 'phone': user.phone}
+        return user
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Invalid token or expired token")

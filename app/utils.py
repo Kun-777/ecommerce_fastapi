@@ -1,8 +1,13 @@
 from passlib.context import CryptContext
-from fastapi import FastAPI
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from pydantic import EmailStr
-from typing import List
+import smtplib
+import requests
+import json
+import urllib.parse
+from .config import settings
+
+METER_TO_MILE = 0.000621371
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
@@ -14,9 +19,9 @@ def verify_password(plain_password, hashed_password):
 
 async def send_verification_email(email: EmailStr):
     conf = ConnectionConfig(
-        MAIL_USERNAME ="alex.fulin.jiang@gmail.com",
-        MAIL_PASSWORD = "twpmocqvjpmququg",
-        MAIL_FROM = "alex.fulin.jiang@gmail.com",
+        MAIL_USERNAME = settings.smtp_email,
+        MAIL_PASSWORD = settings.smtp_pwd,
+        MAIL_FROM = settings.smtp_email,
         MAIL_PORT = 587,
         MAIL_SERVER = "smtp.gmail.com",
         MAIL_STARTTLS = True,
@@ -63,3 +68,42 @@ async def send_verification_email(email: EmailStr):
 
     fm = FastMail(conf)
     await fm.send_message(message)
+
+def send_txt_message(phone_number, carrier, message):
+    recipient = phone_number + carrier
+    auth = (settings.smtp_email, settings.smtp_pwd)
+ 
+    server = smtplib.SMTP("smtp.gmail.com", 587)
+    server.starttls()
+    server.login(auth[0], auth[1])
+ 
+    server.sendmail(auth[0], recipient, message)
+
+'''
+Check if the given address is within our delivery range
+Returns two values: (a boolean that indicates if the address is within our range, error message)
+'''
+def check_addr_within_range(customer_addr):
+    origin = urllib.parse.quote(settings.store_addr)
+    destination = urllib.parse.quote(customer_addr)
+    GOOGLE_MAP_API_KEY = settings.google_map_api_key
+
+    url = f'https://maps.googleapis.com/maps/api/distancematrix/json?origins={origin}&destinations={destination}&units=imperial&key={GOOGLE_MAP_API_KEY}'
+
+    payload={}
+    headers = {}
+
+    response = requests.request("GET", url, headers=headers, data=payload)
+    res_dict = json.loads(response.text)
+    if res_dict['status'] != 'OK':
+        return False, 'Sorry, something went wrong.'
+    if res_dict['rows'][0]['elements'][0]['status'] != 'OK':
+        return False, 'The address you entered could not be found.'
+    else:
+        dist_meter = res_dict['rows'][0]['elements'][0]['distance']['value'] 
+        dist_mi = dist_meter * METER_TO_MILE
+        if dist_mi > settings.delivery_range:
+            return False, 'Sorry, the address you entered is out of our delivery range.'
+        else:
+            return True, ''
+
