@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     database_name: str
     database_username: str
     database_password: str
+    authjwt_secret_key: str
     access_token_expire_minutes: int
     refresh_token_expire_days: int
     tax_rate: float

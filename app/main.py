@@ -29,7 +29,7 @@ app.add_middleware(
 )
 
 class AuthJWTSettings(BaseModel):
-    authjwt_secret_key: str = settings.secret_key
+    authjwt_secret_key: str = settings.authjwt_secret_key
     # Configure application to store and get JWT from cookies
     authjwt_token_location: set = {"cookies"}
     # Disable CSRF Protection for this example. default is True
