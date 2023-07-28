@@ -47,7 +47,7 @@ async def send_verification_email(email: EmailStr):
                         <table border="0" cellpadding="0" cellspacing="0" style="margin-top: 30px;">
                         <tr>
                             <td align="center" bgcolor="#3498db" style="border-radius: 5px;">
-                            <a href="http://localhost:3000/verify_email" target="_blank" style="font-size: 16px; font-weight: bold; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 5px; display: inline-block;">Verify Email</a>
+                            <a href="{settings.client_hostname}/verify_email" target="_blank" style="font-size: 16px; font-weight: bold; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 5px; display: inline-block;">Verify Email</a>
                             </td>
                         </tr>
                         </table>

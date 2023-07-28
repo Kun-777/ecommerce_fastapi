@@ -22,7 +22,7 @@ app.include_router(order.router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[f'https://{settings.client_hostname}'],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

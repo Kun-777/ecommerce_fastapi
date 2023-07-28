@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     google_map_api_key: str
     delivery_range: int
     stripe_api_key: str
+    client_hostname: str
 
     class Config:
         env_file = ".env"

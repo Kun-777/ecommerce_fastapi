@@ -1,7 +1,6 @@
-from fastapi import status, HTTPException, Depends, APIRouter, Request
+from fastapi import status, HTTPException, Depends, APIRouter
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
-from fastapi.templating import Jinja2Templates
 from fastapi_jwt_auth import AuthJWT
 import datetime
 from ..database import get_db
@@ -10,8 +9,6 @@ from ..utils import get_password_hash, verify_password, send_verification_email
 from ..config import settings
 
 router = APIRouter(prefix='/user')
-
-templates = Jinja2Templates(directory='templates')
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -136,7 +133,7 @@ def logout(Authorize: AuthJWT = Depends()):
     Authorize.jwt_required()
 
     Authorize.unset_jwt_cookies()
-    return {"msg":"Successfully logout"}
+    return {"msg": "Successfully logout"}
 
 @router.get('/profile', response_model=schemas.UserProfileResponse)
 def profile(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
@@ -150,7 +147,7 @@ def profile(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
                             detail="Invalid token or expired token")
 
 @router.post('/verify_email', response_class=HTMLResponse)
-def verify_email(request: Request, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
+def verify_email(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     Authorize.jwt_required()
     user_id = Authorize.get_jwt_subject()
     user = db.query(models.User).filter(models.User.id == user_id).first()
@@ -158,7 +155,7 @@ def verify_email(request: Request, Authorize: AuthJWT = Depends(), db: Session =
         update_query = db.query(models.User).filter(models.User.id == user.id)
         update_query.update({"is_verified": True}, synchronize_session=False)
         db.commit()
-        return templates.TemplateResponse("email_verification.html", {"request": request, "username": user.first_name})
+        return {"msg": "Success"}
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Invalid token or expired token")
