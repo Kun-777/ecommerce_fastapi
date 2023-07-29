@@ -61,7 +61,7 @@ async def send_verification_email(email: EmailStr):
 
 
     message = MessageSchema(
-        subject="Fastapi-Mail module",
+        subject="Bargain Liquor Account Verification",
         recipients=[email],
         body=html,
         subtype=MessageType.html)
