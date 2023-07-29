@@ -120,7 +120,9 @@ class OrderResponse(BaseModel):
     tip: Optional[float]
     total: float
     status: str
+    reference_id: Optional[str]
     created_at: datetime
+    cancel_reason: Optional[str]
     class Config:
         orm_mode = True
 

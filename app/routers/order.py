@@ -1,5 +1,5 @@
 from fastapi import status, HTTPException, Depends, APIRouter
-from typing import List, Optional
+from typing import List
 from sqlalchemy.orm import Session
 from fastapi_jwt_auth import AuthJWT
 import datetime
@@ -128,9 +128,9 @@ def confirm_payment(order_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="order does not exist")
     customer_reference = datetime.datetime.today().strftime('%m%d%Y') + str(order_id)
-    update_query.update({'status': 'confirmed'})
+    update_query.update({'status': 'confirmed', 'reference_id': customer_reference})
     db.commit()
-    # send_txt_message(settings.order_confirm_contact, "@msg.fi.google.com", f"An order (#{customer_reference}) has been placed on online store")
+    send_txt_message(settings.order_confirm_contact, "@msg.fi.google.com", f"An order (#{customer_reference}) has been placed on online store")
     return {"customerRef": customer_reference}
 
 @router.put('/error/{order_id}')
@@ -198,7 +198,7 @@ def cancel_order(order_id: int, reason: schemas.OrderCancel, Authorize: AuthJWT 
         if old_order == None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail="order does not exist")
-        update_query.update({'status': 'cancelled', 'cancel_reason': reason.reason})
+        update_query.update({'status': 'canceled', 'cancel_reason': reason.reason})
         db.commit()
         return update_query.first()
     else:

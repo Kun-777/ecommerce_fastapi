@@ -1,5 +1,5 @@
 from fastapi import status, HTTPException, Depends, APIRouter
-from fastapi.responses import HTMLResponse
+from typing import List
 from sqlalchemy.orm import Session
 from fastapi_jwt_auth import AuthJWT
 import datetime
@@ -146,7 +146,7 @@ def profile(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Invalid token or expired token")
 
-@router.post('/verify_email', response_class=HTMLResponse)
+@router.post('/verify_email')
 def verify_email(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     Authorize.jwt_required()
     user_id = Authorize.get_jwt_subject()
@@ -160,4 +160,14 @@ def verify_email(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Invalid token or expired token")
     
-
+@router.get('/orders', response_model=List[schemas.OrderDetailResponse])
+def get_orders_by_user(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
+    Authorize.jwt_required()
+    user_id = Authorize.get_jwt_subject()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user:
+        user_orders = db.query(models.Order).filter((models.Order.user_id == user_id) & ((models.Order.status == 'confirmed') | (models.Order.status == 'accepted') | (models.Order.status == 'completed') | (models.Order.status == 'canceled'))).all()
+        return user_orders
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Invalid token or expired token")

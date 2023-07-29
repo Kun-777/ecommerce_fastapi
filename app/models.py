@@ -71,6 +71,7 @@ class Order(Base):
     
     cancel_reason = Column(String, nullable=True)
 
+    reference_id = Column(String, nullable=True)
     created_at = Column(TIMESTAMP, nullable=False, server_default=text('now()'))
     items = relationship('OrderItem', backref='order')
 
