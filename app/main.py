@@ -32,8 +32,9 @@ class AuthJWTSettings(BaseModel):
     authjwt_secret_key: str = settings.authjwt_secret_key
     # Configure application to store and get JWT from cookies
     authjwt_token_location: set = {"cookies"}
+    authjwt_cookie_domain: str = f'https://{settings.client_hostname}'
     # Only allow JWT cookies to be sent over https
-    authjwt_cookie_secure: bool = False
+    authjwt_cookie_secure: bool = True
     # Enable csrf double submit protection. default is True
     authjwt_cookie_csrf_protect: bool = True
     # Change to 'lax' in production to make your website more secure from CSRF Attacks, default is None
