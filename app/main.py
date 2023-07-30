@@ -32,13 +32,12 @@ class AuthJWTSettings(BaseModel):
     authjwt_secret_key: str = settings.authjwt_secret_key
     # Configure application to store and get JWT from cookies
     authjwt_token_location: set = {"cookies"}
-    authjwt_cookie_domain: str = f'https://{settings.client_hostname}'
     # Only allow JWT cookies to be sent over https
     authjwt_cookie_secure: bool = True
     # Enable csrf double submit protection. default is True
-    authjwt_cookie_csrf_protect: bool = True
+    authjwt_cookie_csrf_protect: bool = False
     # Change to 'lax' in production to make your website more secure from CSRF Attacks, default is None
-    authjwt_cookie_samesite: str = 'lax'
+    authjwt_cookie_samesite: str = 'none'
 
 @AuthJWT.load_config
 def get_config():
@@ -57,6 +56,3 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 	logging.error(f"{request}: {exc_str}")
 	content = {'status_code': 10422, 'message': exc_str, 'data': None}
 	return JSONResponse(content=content, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
-
-
-

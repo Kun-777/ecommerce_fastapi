@@ -64,11 +64,6 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-class UserLoginResponse(BaseModel):
-    access_token: str
-    first_name: str
-    is_admin: bool
-
 class UserChangePassword(BaseModel):
     old_password: str
     new_password: str

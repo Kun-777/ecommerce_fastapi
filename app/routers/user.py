@@ -70,7 +70,7 @@ def change_password(passwords: schemas.UserChangePassword, Authorize: AuthJWT = 
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Old password you entered does not match the information we have on file")
 
-@router.post('/login', response_model=schemas.UserLoginResponse)
+@router.post('/login')
 def login(user_credentials: schemas.UserLogin, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
     if not user:
@@ -90,7 +90,7 @@ def login(user_credentials: schemas.UserLogin, Authorize: AuthJWT = Depends(), d
     Authorize.set_refresh_cookies(refresh_token)
     return {"access_token": access_token, "first_name": user.first_name, "is_admin": user.is_admin}
 
-@router.post('/login_no_refresh', response_model=schemas.UserLoginResponse)
+@router.post('/login_no_refresh')
 def login_no_refresh(user_credentials: schemas.UserLogin, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
     if not user:
@@ -107,7 +107,7 @@ def login_no_refresh(user_credentials: schemas.UserLogin, Authorize: AuthJWT = D
     Authorize.set_access_cookies(access_token)
     return {"access_token": access_token, "first_name": user.first_name, "is_admin": user.is_admin}
 
-@router.post('/refresh', response_model=schemas.UserLoginResponse)
+@router.post('/refresh')
 def refresh(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     """
     The jwt_refresh_token_required() function insures a valid refresh
