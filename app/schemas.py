@@ -19,7 +19,7 @@ class ProductResponse(Product):
 
 class ProductAdminResponse(Product):
     id: int
-    sku: int
+    sku: Optional[str]
     image: Optional[str]
     cost: float
     popularity: int
@@ -28,13 +28,13 @@ class ProductAdminResponse(Product):
         orm_mode = True
 
 class ProductAdminCreate(Product):
-    sku: int
+    sku: Optional[str]
     cost: float
     image: Optional[str]
     popularity: int
 
 class ProductAdminUpdate(BaseModel):
-    sku: Optional[int]
+    sku: Optional[str]
     name: Optional[str]
     price: Optional[float]
     inventory: Optional[int]

@@ -7,7 +7,7 @@ from .database import Base
 class Product(Base):
     __tablename__ = "products"
     id = Column(Integer, primary_key=True)
-    sku = Column(Integer, nullable=False)
+    sku = Column(String, nullable=True)
     name = Column(String, nullable=False)
     size = Column(String, nullable=True)
     category = Column(String, nullable=False)
@@ -15,7 +15,7 @@ class Product(Base):
     description = Column(String, nullable=True)
     popularity = Column(Integer, nullable=False, default=0)
     inventory = Column(Integer, nullable=False, default=0)
-    cost = Column(Float, nullable=False)
+    cost = Column(Float, nullable=False, default=0)
     price = Column(Float, nullable=False)
     image = Column(String, nullable=True)
     created_at = Column(TIMESTAMP, nullable=False, server_default=text('now()'))
