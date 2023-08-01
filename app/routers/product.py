@@ -25,7 +25,12 @@ def get_categories(db: Session = Depends(get_db)):
 async def get_image_by_product_id(id: int, db: Session = Depends(get_db)):
     product = db.query(models.Product).filter(models.Product.id == id).first()
     if product.image:
-        return os.path.join(settings.image_path, product.image)
+        image_path = os.path.join(settings.image_path, product.image)
+        if os.path.exists(image_path):
+            return image_path
+        else:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Image does not exist")
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="Image does not exist")
@@ -82,7 +87,10 @@ def delete_item(id: int, Authorize: AuthJWT = Depends(), db: Session = Depends(g
                             detail=f"item wth id: {id} does not exist")
     
     if item_delete.image:
-        os.remove(os.path.join(settings.image_path, item_delete.image))
+        try:
+            os.remove(os.path.join(settings.image_path, item_delete.image))
+        except OSError:
+            pass
 
     delete_query.delete(synchronize_session=False)
     db.commit()
