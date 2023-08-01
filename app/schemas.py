@@ -8,19 +8,41 @@ class Product(BaseModel):
     inventory: int
     size: str
     category: str
-    image: Optional[str]
+    subcategory: Optional[str]
+    description: Optional[str]
+    popularity: int
 
 class ProductResponse(Product):
     id: int
     class Config:
         orm_mode = True
 
-class ProductAdmin(Product):
+class ProductAdminResponse(Product):
     id: int
+    sku: int
+    image: Optional[str]
     cost: float
     created_at: datetime
     class Config:
         orm_mode = True
+
+class ProductAdminCreate(Product):
+    sku: int
+    cost: float
+    image: Optional[str]
+
+class ProductAdminUpdate(BaseModel):
+    sku: Optional[int]
+    name: Optional[str]
+    price: Optional[float]
+    inventory: Optional[int]
+    size: Optional[str]
+    category: Optional[str]
+    subcategory: Optional[str]
+    description: Optional[str]
+    cost: Optional[float]
+    image: Optional[str]
+    popularity: Optional[int]
 
 class CategoryResponse(BaseModel):
     category: str

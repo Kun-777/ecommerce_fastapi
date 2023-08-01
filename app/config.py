@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     delivery_range: int
     stripe_api_key: str
     client_hostname: str
+    image_path: str
 
     class Config:
         env_file = ".env"

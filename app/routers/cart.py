@@ -20,7 +20,6 @@ def get_cart(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
                                          inventory=cart_item.product.inventory,
                                          size=cart_item.product.size,
                                          category=cart_item.product.category,
-                                         image=cart_item.product.image,
                                          quantity=cart_item.quantity,
                                          synced=True))
     return response

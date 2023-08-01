@@ -7,9 +7,13 @@ from .database import Base
 class Product(Base):
     __tablename__ = "products"
     id = Column(Integer, primary_key=True)
+    sku = Column(Integer, nullable=False)
     name = Column(String, nullable=False)
     size = Column(String, nullable=True)
-    category = Column(String, nullable=False, server_default='other')
+    category = Column(String, nullable=False)
+    subcategory = Column(String, nullable=True)
+    description = Column(String, nullable=True)
+    popularity = Column(Integer, nullable=False, default=0)
     inventory = Column(Integer, nullable=False, default=0)
     cost = Column(Float, nullable=False)
     price = Column(Float, nullable=False)

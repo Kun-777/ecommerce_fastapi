@@ -1,3 +1,4 @@
+aiofiles==23.1.0
 aiosmtplib==2.0.2
 alembic==1.11.1
 anyio==3.7.0

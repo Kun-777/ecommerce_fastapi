@@ -64,6 +64,10 @@ def create_payment(order: schemas.OrderCreate, Authorize: AuthJWT = Depends(), d
                                  status='created')
         db.add(new_order)
     db.commit()
+    customer_reference = datetime.datetime.today().strftime('%m%d%Y') + str(new_order.id)
+    update_query = db.query(models.Order).filter(models.Order.id == new_order.id)
+    update_query.update({'reference_id': customer_reference})
+    db.commit()
 
     for item in order.items:
         new_order_item = models.OrderItem(order_id=new_order.id, product_id=item.id, quantity=item.quantity)
@@ -78,6 +82,8 @@ def create_payment(order: schemas.OrderCreate, Authorize: AuthJWT = Depends(), d
             automatic_payment_methods={
                 'enabled': True,
             },
+            receipt_email=order.email,
+            description=f"Thank you for your order at Bargain Liquor. Your order reference is #{customer_reference}",
         )
         return {
             'clientSecret': intent['client_secret'], 'orderId': new_order.id, 'total': total
@@ -127,11 +133,18 @@ def confirm_payment(order_id: int, db: Session = Depends(get_db)):
     if old_order == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="order does not exist")
-    customer_reference = datetime.datetime.today().strftime('%m%d%Y') + str(order_id)
-    update_query.update({'status': 'confirmed', 'reference_id': customer_reference})
+    update_query.update({'status': 'confirmed'})
     db.commit()
-    send_txt_message(settings.order_confirm_contact, "@msg.fi.google.com", f"An order (#{customer_reference}) has been placed on online store")
-    return {"customerRef": customer_reference}
+    txt_message = f"An order (#{old_order.reference_id}) has been placed on online store. Customer Name - {old_order.first_name} {old_order.last_name}. Order Type - {old_order.order_type}."
+    if old_order.order_type == 'delivery':
+        if old_order.address_line_2:
+            address = old_order.address_line_1 + ' ' + old_order.address_line_2 + ', ' + old_order.city + ', ' + old_order.state + ' ' + old_order.zip_code
+        else:
+            address = old_order.address_line_1 + ', ' + old_order.city + ', ' + old_order.state + ' ' + old_order.zip_code
+        txt_message += 'Address - ' + address
+    txt_message += f'\nLink - {settings.client_hostname}/order/{old_order.id}'
+    send_txt_message(settings.order_confirm_contact, "@msg.fi.google.com", txt_message)
+    return {"msg": "Success"}
 
 @router.put('/error/{order_id}')
 def payment_error(order_id: int, db: Session = Depends(get_db)):
@@ -177,7 +190,7 @@ def complete_order(order_id: int, Authorize: AuthJWT = Depends(), db: Session = 
         db.commit()
         # update inventory
         for item in old_order.items:
-            product_id = item.id
+            product_id = item.product_id
             update_product = db.query(models.Product).filter(models.Product.id == product_id)
             product = update_product.first()
             update_product.update({'inventory': product.inventory - item.quantity})
@@ -233,7 +246,7 @@ def get_order_detail(id: int, Authorize: AuthJWT = Depends(), db: Session = Depe
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Permission denied.")
 
-''' 
+'''
 Delete all orders that satisfy the one of the following:
 1. Order is created before 15 minutes ago and the order's status is either 'created' or 'error'
 2. Order is created before 20 minutes ago and the order's status is 'placed'
@@ -247,4 +260,3 @@ def clean_expired_orders(db: Session = Depends(get_db)):
                                                 ((models.Order.created_at < twenty_min_ago) & (models.Order.status == 'placed')))
     clean_query.delete(synchronize_session=False)
     db.commit()
-
