@@ -10,10 +10,10 @@ class Product(BaseModel):
     category: str
     subcategory: Optional[str]
     description: Optional[str]
-    popularity: int
 
 class ProductResponse(Product):
     id: int
+    popularity: int
     class Config:
         orm_mode = True
 
@@ -22,6 +22,7 @@ class ProductAdminResponse(Product):
     sku: int
     image: Optional[str]
     cost: float
+    popularity: int
     created_at: datetime
     class Config:
         orm_mode = True
@@ -30,6 +31,7 @@ class ProductAdminCreate(Product):
     sku: int
     cost: float
     image: Optional[str]
+    popularity: int
 
 class ProductAdminUpdate(BaseModel):
     sku: Optional[int]
