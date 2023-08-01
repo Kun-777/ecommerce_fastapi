@@ -6,7 +6,7 @@ class Product(BaseModel):
     name: str
     price: float
     inventory: int
-    size: str
+    size: Optional[str]
     category: str
     subcategory: Optional[str]
     description: Optional[str]
