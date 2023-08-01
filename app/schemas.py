@@ -21,7 +21,7 @@ class ProductAdminResponse(Product):
     id: int
     sku: Optional[str]
     image: Optional[str]
-    cost: float
+    cost: Optional[float]
     popularity: int
     created_at: datetime
     class Config:
@@ -29,7 +29,7 @@ class ProductAdminResponse(Product):
 
 class ProductAdminCreate(Product):
     sku: Optional[str]
-    cost: float
+    cost: Optional[float]
     image: Optional[str]
     popularity: int
 
