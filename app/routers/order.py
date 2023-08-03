@@ -231,20 +231,13 @@ def get_all_orders(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)
                             detail="Permission denied.")
     
 @router.get('/detail/{id}', response_model=schemas.OrderDetailResponse)
-def get_order_detail(id: int, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
-    Authorize.jwt_required()
-    user_id = Authorize.get_jwt_subject()
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if user and user.is_admin:
-        order = db.query(models.Order).filter(models.Order.id == id).first()
-        if order:
-            return order
-        else:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="order does not exist")
+def get_order_detail(id: int, db: Session = Depends(get_db)):
+    order = db.query(models.Order).filter(models.Order.id == id).first()
+    if order:
+        return order
     else:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail="Permission denied.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                        detail="order does not exist")
 
 '''
 Delete all orders that satisfy the one of the following:
